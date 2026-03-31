@@ -160,6 +160,16 @@ export interface CropUnit {
   cropCategory: CropCategory;
   plantingPeriod?: number;
 
+  // --- FSA-578 Linkage ---
+  /** Full FSA-578 record IDs associated with this crop unit */
+  fsa578RecordIds?: string[];
+  /** FSA-578 farm/tract/field for quick reference */
+  farmNumber?: string;
+  tractNumber?: string;
+  fieldNumber?: string;
+  /** FSA-578 determined acreage (from COC) */
+  fsa578DeterminedAcres?: number;
+
   // Acreage & Production
   acres?: number;
   sdrpAcres?: number;           // From FSA-578

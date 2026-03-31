@@ -34,6 +34,14 @@ import type {
   ApplicationStatus,
 } from '../types/sdrp';
 
+import type {
+  FSA578Record,
+  FSA578Summary,
+  FSA578FieldCardProperties,
+  GeoJSONPolygon,
+  GeoJSONFeatureCollection,
+} from '../types/fsa578';
+
 // ============================================================
 // HOOK RETURN TYPE — This is what R2-D2 consumes
 // ============================================================
@@ -86,6 +94,29 @@ export interface UseSDRPFormReturn {
 
   /** Set share designation (for SBI situations) */
   setShareDesignation: (cropUnitId: string, shares: Record<string, number>) => void;
+
+  // --- FSA-578 Map Field Cards (Step 4) ---
+  /** All FSA-578 records for the application */
+  fsa578Records: FSA578Record[];
+  /** Summary of FSA-578 data */
+  fsa578Summary: FSA578Summary | null;
+  /** All drawn polygons as GeoJSON FeatureCollection */
+  fieldPolygons: GeoJSONFeatureCollection;
+
+  /** Create FSA-578 record from a drawn polygon */
+  addFieldFromPolygon: (polygon: GeoJSONPolygon, calculatedAcres: number) => FSA578Record;
+  /** Update an FSA-578 record (field card edit) */
+  updateFSA578Record: (recordId: string, data: Partial<FSA578Record>) => void;
+  /** Remove an FSA-578 record (delete polygon) */
+  removeFSA578Record: (recordId: string) => void;
+  /** Get field card display properties for a record */
+  getFieldCardProperties: (recordId: string) => FSA578FieldCardProperties | null;
+  /** Link an FSA-578 record to a CropUnit */
+  linkFSA578ToCropUnit: (fsa578RecordId: string, cropUnitId: string) => void;
+  /** Import FSA-578 data from an uploaded document */
+  importFSA578FromDocument: (docId: string) => Promise<FSA578Record[]>;
+  /** Validate all FSA-578 records */
+  validateFSA578: () => { valid: boolean; errors: string[] };
 
   // --- Document Upload (Step 5) ---
   uploadDocument: (file: File, type: SupportingDocument['type']) => Promise<SupportingDocument>;
@@ -330,6 +361,23 @@ export function useSDRPFormStub(_applicationId?: string): UseSDRPFormReturn {
     setDisasterEvent: () => {},
     setLinkageAgreement: () => {},
     setShareDesignation: () => {},
+    fsa578Records: [],
+    fsa578Summary: null,
+    fieldPolygons: { type: 'FeatureCollection', features: [] },
+    addFieldFromPolygon: (_polygon, _acres) => ({
+      id: '', adminStateCode: '', adminState: '', adminCountyCode: '', adminCounty: '',
+      farmNumber: '', tractNumber: '', fieldNumber: '', cropName: '', intendedUse: '',
+      practiceType: '', isPreventedPlanted: false, reportedAcres: 0, sharePercent: 100,
+      hasNAPCoverage: false, organicStatus: 'conventional' as const, isNativeSod: false,
+      cropYear: 2024 as const, isMultiCounty: false, isDoubleCrop: false, isSubsequentCrop: false,
+      isHEL: false, isWetland: false, status: 'reported' as const, source: 'map_drawn' as const,
+    }),
+    updateFSA578Record: () => {},
+    removeFSA578Record: () => {},
+    getFieldCardProperties: () => null,
+    linkFSA578ToCropUnit: () => {},
+    importFSA578FromDocument: async () => [],
+    validateFSA578: () => ({ valid: true, errors: [] }),
     uploadDocument: async () => ({ id: '', type: 'other', fileName: '', uploadedAt: '', status: 'pending' }),
     removeDocument: () => {},
     getDocuments: () => [],
