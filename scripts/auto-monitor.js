@@ -42,13 +42,21 @@ function getGatewayStatus() {
   }
 }
 
-function isActive(statusData) {
-  if (!statusData || !statusData.sessions) return false;
-  const now = Date.now();
-  return statusData.sessions.some(s => {
-    const lastActive = s.lastActiveAt ? new Date(s.lastActiveAt).getTime() : 0;
-    return (now - lastActive) < ACTIVE_THRESHOLD_MS;
-  });
+function getRecentSessions(statusData) {
+  if (!statusData || !statusData.sessions) return [];
+  return statusData.sessions.recent || [];
+}
+
+function isSessionActive(session) {
+  // age is in milliseconds (int) — time since last activity
+  if (typeof session.age === 'number') {
+    return session.age < ACTIVE_THRESHOLD_MS;
+  }
+  // fallback: updatedAt is epoch ms
+  if (typeof session.updatedAt === 'number') {
+    return (Date.now() - session.updatedAt) < ACTIVE_THRESHOLD_MS;
+  }
+  return false;
 }
 
 async function pushStatus(status, currentTask) {
@@ -62,20 +70,14 @@ async function pushStatus(status, currentTask) {
 
 async function poll() {
   const statusData = getGatewayStatus();
-  const active = isActive(statusData);
+  const sessions = getRecentSessions(statusData);
+  const activeSessions = sessions.filter(isSessionActive);
+  const active = activeSessions.length > 0;
 
   const status = active ? 'working' : 'idle';
-  let currentTask = '';
-
-  if (active && statusData && statusData.sessions) {
-    const activeSessions = statusData.sessions
-      .filter(s => {
-        const lastActive = s.lastActiveAt ? new Date(s.lastActiveAt).getTime() : 0;
-        return (Date.now() - lastActive) < ACTIVE_THRESHOLD_MS;
-      })
-      .map(s => s.label || s.sessionKey || 'unknown');
-    currentTask = activeSessions.join(', ');
-  }
+  const currentTask = active
+    ? activeSessions.map(s => s.kind || s.key || 'unknown').join(', ')
+    : '';
 
   await pushStatus(status, currentTask);
   console.log(`[${new Date().toISOString()}] ${BOT_ID}: ${status}${currentTask ? ' — ' + currentTask : ''}`);
